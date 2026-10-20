@@ -1,4 +1,4 @@
-﻿#include <string.h>
+#include <string.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/portmacro.h"
@@ -72,8 +72,9 @@ void bench_core_publish_status(const bench_status_t *status)
     }
 
     taskENTER_CRITICAL(&s_bench_lock);
+    const uint32_t next_sequence_number = s_status.sequence_number + 1U;
     s_status = *status;
-    s_status.sequence_number++;
+    s_status.sequence_number = next_sequence_number;
     taskEXIT_CRITICAL(&s_bench_lock);
 }
 

@@ -5,6 +5,9 @@
  */
 
 #include "sdkconfig.h"
+
+#include "bench_core.h"
+#include "bench_simulator.h"
 #include "esp_littlefs.h"
 #include "nvs_flash.h"
 #include "esp_netif.h"
@@ -72,6 +75,9 @@ esp_err_t init_fs(void)
 
 void app_main(void)
 {
+    ESP_ERROR_CHECK(bench_core_init());
+    ESP_ERROR_CHECK(bench_simulator_start());
+
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());

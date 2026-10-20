@@ -14,6 +14,8 @@
 #include "esp_vfs.h"
 #include "cJSON.h"
 
+#include "bench_core.h"
+
 static const char *TAG = "esp-rest";
 
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + 128)
@@ -131,6 +133,126 @@ static esp_err_t light_brightness_post_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* Read-only handler for getting the current generator bench status */
+static esp_err_t bench_status_get_handler(httpd_req_t *req)
+{
+    bench_status_t status;
+    bench_core_get_status(&status);
+
+    cJSON *root = cJSON_CreateObject();
+    if (root == NULL) {
+        httpd_resp_send_err(
+            req,
+            HTTPD_500_INTERNAL_SERVER_ERROR,
+            "Unable to create bench status response"
+        );
+        return ESP_ERR_NO_MEM;
+    }
+
+    cJSON_AddStringToObject(
+        root,
+        "state",
+        bench_state_to_string(status.state)
+    );
+
+    cJSON_AddStringToObject(
+        root,
+        "fault",
+        bench_fault_to_string(status.fault)
+    );
+
+    cJSON_AddBoolToObject(
+        root,
+        "fc1Safe",
+        status.fc1_safe
+    );
+
+    cJSON_AddBoolToObject(
+        root,
+        "fc2TorqueReached",
+        status.fc2_torque_reached
+    );
+
+    cJSON_AddBoolToObject(
+        root,
+        "contactorActive",
+        status.contactor_active
+    );
+
+    cJSON_AddBoolToObject(
+        root,
+        "readyLedActive",
+        status.ready_led_active
+    );
+
+    cJSON_AddBoolToObject(
+        root,
+        "testLedActive",
+        status.test_led_active
+    );
+
+    cJSON_AddBoolToObject(
+        root,
+        "faultLedActive",
+        status.fault_led_active
+    );
+
+    cJSON_AddNumberToObject(
+        root,
+        "pwmPercent",
+        status.pwm_percent
+    );
+
+    cJSON_AddNumberToObject(
+        root,
+        "currentA",
+        status.current_a
+    );
+
+    cJSON_AddNumberToObject(
+        root,
+        "maximumCurrentA",
+        status.maximum_current_a
+    );
+
+    cJSON_AddNumberToObject(
+        root,
+        "elapsedMs",
+        status.elapsed_ms
+    );
+
+    cJSON_AddNumberToObject(
+        root,
+        "sequenceNumber",
+        status.sequence_number
+    );
+
+    cJSON_AddBoolToObject(
+        root,
+        "simulationEnabled",
+        status.simulation_enabled
+    );
+
+    char *response = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+
+    if (response == NULL) {
+        httpd_resp_send_err(
+            req,
+            HTTPD_500_INTERNAL_SERVER_ERROR,
+            "Unable to serialize bench status"
+        );
+        return ESP_ERR_NO_MEM;
+    }
+
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+
+    esp_err_t result = httpd_resp_sendstr(req, response);
+    free(response);
+
+    return result;
+}
 /* Simple handler for getting system handler */
 static esp_err_t system_info_get_handler(httpd_req_t *req)
 {
@@ -186,6 +308,14 @@ esp_err_t start_rest_server(const char *base_path)
     };
     httpd_register_uri_handler(server, &system_info_get_uri);
 
+    /* URI handler for fetching the generator bench status */
+    httpd_uri_t bench_status_get_uri = {
+        .uri = "/api/v1/bench/status",
+        .method = HTTP_GET,
+        .handler = bench_status_get_handler,
+        .user_ctx = rest_context
+    };
+    httpd_register_uri_handler(server, &bench_status_get_uri);
     /* URI handler for fetching temperature data */
     httpd_uri_t temperature_data_get_uri = {
         .uri = "/api/v1/temp/raw",

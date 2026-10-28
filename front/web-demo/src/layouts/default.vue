@@ -4,7 +4,7 @@
       <v-list density="compact">
         <v-list-item
           prepend-icon="$home"
-          title="Home"
+          title="Monitor BPG"
           to="/"
         />
         <v-list-item
@@ -22,7 +22,7 @@
 
     <v-app-bar app clipped-left color="blue-grey-darken-3">
       <v-app-bar-nav-icon @click="drawer = !drawer" />
-      <v-app-bar-title>Dashboard</v-app-bar-title>
+      <v-app-bar-title>BPG · Banco de Prueba de Generadores</v-app-bar-title>
     </v-app-bar>
 
     <v-main>
@@ -35,7 +35,7 @@
       <v-row align="center" justify="space-between" no-gutters>
         <v-col cols="auto">
           <span class="text-grey-lighten-3 text-body-2">
-            Copyright &copy; {{ new Date().getFullYear() }} Espressif Systems. All rights reserved.
+            BPG · IMPA Taller Regional Quilmes · {{ new Date().getFullYear() }}
           </span>
         </v-col>
         <v-col cols="auto">

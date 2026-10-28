@@ -2,7 +2,7 @@
  * Composables for dashboard application
  */
 import { onUnmounted, ref, watch } from 'vue'
-import { lightApi, systemApi, tempApi } from '@/services/api'
+import { benchApi, lightApi, systemApi, tempApi } from '@/services/api'
 
 /**
  * Composable for system information
@@ -137,5 +137,87 @@ export function useLightControl () {
     loading,
     error,
     setColor,
+  }
+}
+/**
+ * Polling del estado operativo del banco.
+ *
+ * Usa setTimeout en lugar de setInterval para evitar superponer
+ * solicitudes si el ESP32 o la red tardan en responder.
+ */
+export function useBenchStatus (interval = 500) {
+  const status = ref(null)
+  const loading = ref(false)
+  const connected = ref(false)
+  const error = ref(null)
+  const lastUpdatedAt = ref(null)
+
+  let timer = null
+  let stopped = true
+
+  const fetchStatus = async () => {
+    if (loading.value) {
+      return
+    }
+
+    loading.value = true
+
+    try {
+      status.value = await benchApi.getStatus().send({ force: true })
+      connected.value = true
+      error.value = null
+      lastUpdatedAt.value = new Date()
+    } catch (error_) {
+      connected.value = false
+      error.value = error_
+      console.error('Failed to fetch bench status:', error_)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const scheduleNextPoll = () => {
+    if (stopped) {
+      return
+    }
+
+    timer = setTimeout(async () => {
+      await fetchStatus()
+      scheduleNextPoll()
+    }, interval)
+  }
+
+  const startPolling = async () => {
+    if (!stopped) {
+      return
+    }
+
+    stopped = false
+    await fetchStatus()
+    scheduleNextPoll()
+  }
+
+  const stopPolling = () => {
+    stopped = true
+
+    if (timer) {
+      clearTimeout(timer)
+      timer = null
+    }
+  }
+
+  onUnmounted(() => {
+    stopPolling()
+  })
+
+  return {
+    status,
+    loading,
+    connected,
+    error,
+    lastUpdatedAt,
+    fetchStatus,
+    startPolling,
+    stopPolling,
   }
 }

@@ -68,3 +68,9 @@ export const tempApi = {
 export const lightApi = {
   setBrightness: data => alova.Post('/api/v1/light/brightness', data),
 }
+export const benchApi = {
+  getStatus: () => alova.Get(`/api/v1/bench/status?_t=${Date.now()}`, {
+    localCache: 0,
+    hitSource: 'network',
+  }),
+}

@@ -7,6 +7,7 @@ idf_component_register(
         nvs_flash
         bench_core
         bench_simulator
+        bench_controller
         board
     INCLUDE_DIRS
         "."

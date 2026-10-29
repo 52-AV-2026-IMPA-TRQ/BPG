@@ -2,6 +2,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/portmacro.h"
+#include "freertos/queue.h"
 
 #include "bench_core.h"
 
@@ -9,6 +10,7 @@ static portMUX_TYPE s_bench_lock = portMUX_INITIALIZER_UNLOCKED;
 
 static bench_status_t s_status;
 static bench_config_t s_config;
+static QueueHandle_t s_command_queue = NULL;
 
 static bench_config_t bench_default_config(void)
 {
@@ -51,7 +53,40 @@ esp_err_t bench_core_init(void)
     s_config = bench_default_config();
     taskEXIT_CRITICAL(&s_bench_lock);
 
+    if (s_command_queue == NULL) {
+        s_command_queue = xQueueCreate(BENCH_COMMAND_QUEUE_LENGTH, sizeof(bench_command_t));
+        if (s_command_queue == NULL) {
+            return ESP_ERR_NO_MEM;
+        }
+    } else {
+        xQueueReset(s_command_queue);
+    }
+
     return ESP_OK;
+}
+
+esp_err_t bench_core_send_command(const bench_command_t *command)
+{
+    if (command == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (s_command_queue == NULL) {
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    return (xQueueSend(s_command_queue, command, 0) == pdTRUE) ? ESP_OK : ESP_ERR_NO_MEM;
+}
+
+esp_err_t bench_core_receive_command(bench_command_t *command, TickType_t timeout)
+{
+    if (command == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (s_command_queue == NULL) {
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    return (xQueueReceive(s_command_queue, command, timeout) == pdTRUE) ? ESP_OK : ESP_ERR_TIMEOUT;
 }
 
 void bench_core_get_status(bench_status_t *status)
@@ -119,16 +154,22 @@ const char *bench_state_to_string(bench_state_t state)
     switch (state) {
     case BENCH_STATE_INITIALIZING:
         return "INITIALIZING";
+    case BENCH_STATE_SELF_TEST:
+        return "SELF_TEST";
     case BENCH_STATE_READY:
         return "READY";
     case BENCH_STATE_TESTING:
         return "TESTING";
+    case BENCH_STATE_SAFE_CUTOFF:
+        return "SAFE_CUTOFF";
     case BENCH_STATE_COMPLETED:
         return "COMPLETED";
     case BENCH_STATE_STOPPED:
         return "STOPPED";
     case BENCH_STATE_FAULT:
         return "FAULT";
+    case BENCH_STATE_COOLDOWN:
+        return "COOLDOWN";
     default:
         return "UNKNOWN";
     }

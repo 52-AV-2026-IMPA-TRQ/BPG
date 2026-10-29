@@ -17,7 +17,7 @@ typedef struct {
     float maximum_current_a;
 } bench_config_t;
 
-#define BENCH_DEFAULT_PWM_FREQUENCY_HZ       4000U
+#define BENCH_DEFAULT_PWM_FREQUENCY_HZ       1000U
 #define BENCH_DEFAULT_PWM_RESOLUTION_BITS    12U
 #define BENCH_DEFAULT_INITIAL_PWM_PERCENT     0.0f
 #define BENCH_DEFAULT_MAXIMUM_PWM_PERCENT   100.0f

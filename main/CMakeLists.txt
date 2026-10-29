@@ -2,8 +2,10 @@ idf_component_register(
     SRCS
         "esp_rest_main.c"
         "rest_server.c"
+        "bench_rest_api.c"
     PRIV_REQUIRES
         esp_http_server
+        esp_timer
         nvs_flash
         bench_core
         bench_simulator

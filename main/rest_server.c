@@ -15,6 +15,7 @@
 #include "cJSON.h"
 
 #include "bench_core.h"
+#include "bench_rest_api.h"
 
 static const char *TAG = "esp-rest";
 
@@ -316,6 +317,9 @@ esp_err_t start_rest_server(const char *base_path)
         .user_ctx = rest_context
     };
     httpd_register_uri_handler(server, &bench_status_get_uri);
+
+    /* Simulated command and input endpoints (diagnostics only) */
+    ESP_GOTO_ON_ERROR(bench_rest_api_register(server, rest_context), err_stop, TAG, "Failed to register bench API");
     /* URI handler for fetching temperature data */
     httpd_uri_t temperature_data_get_uri = {
         .uri = "/api/v1/temp/raw",
@@ -346,6 +350,8 @@ esp_err_t start_rest_server(const char *base_path)
 #endif // CONFIG_EXAMPLE_DEPLOY_WEB_PAGES
 
     return ESP_OK;
+err_stop:
+    httpd_stop(server);
 err:
     if (rest_context) {
         free(rest_context);

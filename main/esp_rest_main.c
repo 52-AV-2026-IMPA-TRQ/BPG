@@ -78,11 +78,11 @@ esp_err_t init_fs(void)
 void app_main(void)
 {
     ESP_ERROR_CHECK(bench_core_init());
+    ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(bench_profiles_init());
     ESP_ERROR_CHECK(bench_simulator_start());
     ESP_ERROR_CHECK(bench_controller_start());
 
-    ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     initialise_mdns();

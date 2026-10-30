@@ -28,7 +28,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$ExpectedTestCount = 12
+$ExpectedTestCount = 31
 $AppAddress = '0x10000'
 $ProjectName = 'bpg_generator_profiles_unity'
 
@@ -144,8 +144,16 @@ set(EXTRA_COMPONENT_DIRS
     "$profilesDir"
     "$testDir")
 include(`$ENV{IDF_PATH}/tools/cmake/project.cmake)
+# Test-only: enables the storage partition-label hook in bench_profiles and the tests.
+idf_build_set_property(COMPILE_DEFINITIONS "BENCH_PROFILES_TEST_HOOKS=1" APPEND)
 project($ProjectName)
 "@
+
+    # 4 MB flash matches the BPG board; the tests check the nvs_test range against it.
+    $sdkDefaults = @'
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+'@
 
     # The test component is linked whole-archive so its TEST_CASE constructors are kept.
     $mainCmake = @'
@@ -189,6 +197,7 @@ void app_main(void)
 '@
 
     Write-TextFile (Join-Path $TempRoot 'CMakeLists.txt') $rootCmake
+    Write-TextFile (Join-Path $TempRoot 'sdkconfig.defaults') $sdkDefaults
     Write-TextFile (Join-Path $TempRoot 'main\CMakeLists.txt') $mainCmake
     Write-TextFile (Join-Path $TempRoot 'main\test_app_main.c') $mainSource
 }
@@ -242,6 +251,7 @@ switch ($Action) {
         Write-Host ''
         Write-Host 'The Unity application will temporarily replace BPG in the factory partition.' -ForegroundColor Yellow
         Write-Host "Only $AppAddress is written; bootloader, partition table and LittleFS are untouched."
+        Write-Host 'At runtime the tests use only unallocated flash 0x310000-0x316000 (partition nvs_test); the nvs partition (Wi-Fi) is not used.'
         Show-DownloadModeInstructions
         Invoke-EsptoolWrite $AppBinary
         Write-Host 'Flash complete. Run -Action Monitor to see the test results.'

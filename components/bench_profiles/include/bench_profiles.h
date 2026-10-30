@@ -48,9 +48,21 @@ typedef struct {
 } bench_profile_t;
 
 /*
- * Resets all slots to EMPTY (revision 0, empty texts, default safe config)
- * and clears the selection. Does not load any profile. Safe to call again.
- * All other stateful functions return ESP_ERR_INVALID_STATE before the first init.
+ * Loads the profiles persisted in NVS (see bench_profiles_storage.h) into RAM.
+ * Requires nvs_flash_init() to have completed. Starts from 10 EMPTY slots with
+ * no selection and never selects anything automatically; missing, corrupt or
+ * incompatible stored slots stay EMPTY (logged, NVS not modified). A normal
+ * load does not write to NVS. Call it once from a single task before other
+ * tasks use the API; calling it again reloads RAM from NVS (it does not erase
+ * NVS). On failure the component stays uninitialized.
+ *
+ * Persistence: set, clear, set_enabled and select write to NVS first and
+ * update RAM only if the write succeeded; on error RAM keeps its old content.
+ * A slot change and the selection removal it implies are stored in a single
+ * NVS commit, so they apply together or not at all. Mutations are serialized by an internal mutex
+ * and may block while NVS is busy; do not call them from interrupt context.
+ * All other stateful functions return ESP_ERR_INVALID_STATE before the first
+ * successful init.
  */
 esp_err_t bench_profiles_init(void);
 

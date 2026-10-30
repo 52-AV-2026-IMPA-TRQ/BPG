@@ -159,6 +159,9 @@ idf_component_set_property(test WHOLE_ARCHIVE TRUE)
     $mainSource = @'
 #include <stdio.h>
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 #include "unity.h"
 #include "unity_test_runner.h"
 
@@ -177,8 +180,11 @@ void app_main(void)
     unity_run_all_tests();
     UNITY_END();
 
-    printf("Automatic run finished. Unity menu available:\n");
-    unity_run_menu();
+    printf("Automatic test run finished. Reset or restore BPG firmware.\n");
+
+    for (;;) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
 }
 '@
 
@@ -234,7 +240,7 @@ switch ($Action) {
         Assert-AppBuilt
 
         Write-Host ''
-        Write-Host 'La aplicación Unity sustituirá temporalmente BPG en la partición factory.' -ForegroundColor Yellow
+        Write-Host 'The Unity application will temporarily replace BPG in the factory partition.' -ForegroundColor Yellow
         Write-Host "Only $AppAddress is written; bootloader, partition table and LittleFS are untouched."
         Show-DownloadModeInstructions
         Invoke-EsptoolWrite $AppBinary
@@ -249,7 +255,8 @@ switch ($Action) {
 
         Write-Host ''
         Write-Host 'The tests run automatically at boot.'
-        Write-Host 'Afterwards the Unity menu stays available.'
+        Write-Host 'When they finish, the application idles in a cooperative wait loop.'
+        Write-Host 'There is no interactive Unity menu anymore.'
         Write-Host 'Press Ctrl+T followed by X to exit the monitor.'
         Write-Host ''
         & idf.py -C $TempRoot -B $BuildDir -p $Port monitor

@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "esp_err.h"
+
 typedef struct {
     uint32_t pwm_frequency_hz;
     uint8_t pwm_resolution_bits;
@@ -16,6 +18,14 @@ typedef struct {
 
     float maximum_current_a;
 } bench_config_t;
+
+/*
+ * Single source of truth for test configuration validation.
+ * maximum_current_a == 0 is valid and means current protection disabled;
+ * negative or non-finite values are rejected.
+ * Returns ESP_ERR_INVALID_ARG when config is NULL or invalid.
+ */
+esp_err_t bench_config_validate(const bench_config_t *config);
 
 #define BENCH_DEFAULT_PWM_FREQUENCY_HZ       1000U
 #define BENCH_DEFAULT_PWM_RESOLUTION_BITS    12U

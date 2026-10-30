@@ -7,6 +7,7 @@
 #include "sdkconfig.h"
 
 #include "bench_core.h"
+#include "bench_profiles.h"
 #include "bench_simulator.h"
 #include "bench_controller.h"
 #include "esp_littlefs.h"
@@ -77,6 +78,7 @@ esp_err_t init_fs(void)
 void app_main(void)
 {
     ESP_ERROR_CHECK(bench_core_init());
+    ESP_ERROR_CHECK(bench_profiles_init());
     ESP_ERROR_CHECK(bench_simulator_start());
     ESP_ERROR_CHECK(bench_controller_start());
 

@@ -8,6 +8,7 @@ idf_component_register(
         esp_timer
         nvs_flash
         bench_core
+        bench_profiles
         bench_simulator
         bench_controller
         board

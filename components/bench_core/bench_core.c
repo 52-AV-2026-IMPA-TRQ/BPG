@@ -1,3 +1,4 @@
+#include <math.h>
 #include <string.h>
 
 #include "freertos/FreeRTOS.h"
@@ -124,7 +125,7 @@ void bench_core_get_config(bench_config_t *config)
     taskEXIT_CRITICAL(&s_bench_lock);
 }
 
-esp_err_t bench_core_set_config(const bench_config_t *config)
+esp_err_t bench_config_validate(const bench_config_t *config)
 {
     if (config == NULL) {
         return ESP_ERR_INVALID_ARG;
@@ -140,6 +141,25 @@ esp_err_t bench_core_set_config(const bench_config_t *config)
         config->ramp_period_ms == 0U ||
         config->maximum_test_time_ms == 0U) {
         return ESP_ERR_INVALID_ARG;
+    }
+
+    /* Written as a positive test so NaN is rejected; 0 disables the protection. */
+    if (!isfinite(config->maximum_pwm_percent) ||
+        !isfinite(config->initial_pwm_percent) ||
+        !isfinite(config->pwm_increment_percent) ||
+        !isfinite(config->maximum_current_a) ||
+        !(config->maximum_current_a >= 0.0f)) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    return ESP_OK;
+}
+
+esp_err_t bench_core_set_config(const bench_config_t *config)
+{
+    const esp_err_t validation_result = bench_config_validate(config);
+    if (validation_result != ESP_OK) {
+        return validation_result;
     }
 
     taskENTER_CRITICAL(&s_bench_lock);
